@@ -36,6 +36,24 @@ config :phoenix_live_view,
 # at the `config/runtime.exs`.
 config :revenue_api, RevenueApi.Mailer, adapter: Swoosh.Adapters.Local
 
+config :revenue_api, RevenueApi.Guardian, issuer: "revenue_api"
+
+config :revenue_api, Oban,
+  repo: RevenueApi.Repo,
+  queues: [default: 10, sms: 10, pdf: 5],
+  plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
+
+config :hammer,
+  backend:
+    {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
+
+# Swapped per-env: Notifier.Console in dev, NotifierMock (Mox) in test,
+# Notifier.Termii in prod. See specs/mvp_design.md "SMS Confirmation".
+config :revenue_api, :notifier, RevenueApi.Notifier.Console
+config :revenue_api, :storage, RevenueApi.Storage.Local
+config :revenue_api, :storage_local, base_dir: Path.expand("../priv/uploads", __DIR__)
+config :revenue_api, :cors_origins, ["*"]
+
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",

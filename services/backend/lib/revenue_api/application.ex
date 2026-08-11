@@ -12,8 +12,8 @@ defmodule RevenueApi.Application do
       RevenueApi.Repo,
       {DNSCluster, query: Application.get_env(:revenue_api, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RevenueApi.PubSub},
-      # Start a worker by calling: RevenueApi.Worker.start_link(arg)
-      # {RevenueApi.Worker, arg},
+      {Oban, Application.fetch_env!(:revenue_api, Oban)},
+      ChromicPDF,
       # Start to serve requests, typically the last entry
       RevenueApiWeb.Endpoint
     ]

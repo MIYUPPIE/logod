@@ -83,7 +83,40 @@ if config_env() == :prod do
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    # SRS §8: all API traffic over HTTPS. Self-signed is fine for a pilot
+    # behind a reverse proxy that terminates TLS; this still forces the
+    # redirect + HSTS at the app layer either way.
+    force_ssl: [hsts: true]
+
+  guardian_secret =
+    System.get_env("GUARDIAN_SECRET_KEY") ||
+      raise "environment variable GUARDIAN_SECRET_KEY is missing"
+
+  config :revenue_api, RevenueApi.Guardian, secret_key: guardian_secret
+
+  receipt_signing_key =
+    System.get_env("RECEIPT_SIGNING_KEY") ||
+      raise "environment variable RECEIPT_SIGNING_KEY is missing"
+
+  config :revenue_api, :receipt_signing_key, receipt_signing_key
+
+  # SRS §9 open decision: Termii, behind the Notifier behaviour (see
+  # specs/mvp_design.md). Swapping to Africa's Talking is a one-line change
+  # here plus a new adapter module.
+  config :revenue_api, :notifier, RevenueApi.Notifier.Termii
+
+  config :revenue_api, :termii,
+    api_key: System.get_env("TERMII_API_KEY"),
+    sender_id: System.get_env("TERMII_SENDER_ID", "RevenueNG"),
+    base_url: System.get_env("TERMII_BASE_URL", "https://api.ng.termii.com")
+
+  config :revenue_api, :storage, RevenueApi.Storage.S3
+  config :revenue_api, :storage_s3, bucket: System.get_env("S3_BUCKET", "revenue-mvp-uploads")
+
+  # Comma-separated allowlist, e.g. "https://admin.example.com,https://agent.example.com"
+  config :revenue_api, :cors_origins,
+    (System.get_env("CORS_ORIGINS") || "") |> String.split(",", trim: true)
 
   # ## SSL Support
   #

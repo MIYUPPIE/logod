@@ -39,3 +39,16 @@ config :phoenix_live_view,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+config :revenue_api, RevenueApi.Guardian,
+  secret_key: "test_only_guardian_secret_do_not_use_in_prod_aB3xQ9"
+
+config :revenue_api, :receipt_signing_key, "test_only_receipt_signing_key"
+
+# Jobs are inserted but not auto-executed; tests use Oban.Testing to assert
+# on enqueued jobs and run workers explicitly.
+config :revenue_api, Oban, testing: :manual
+
+config :revenue_api, :notifier, RevenueApi.NotifierMock
+config :revenue_api, :storage, RevenueApi.Storage.Local
+config :revenue_api, :storage_local, base_dir: Path.expand("../priv/uploads_test", __DIR__)

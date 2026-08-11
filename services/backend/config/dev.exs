@@ -75,3 +75,9 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Dev-only secrets, not used in prod (see config/runtime.exs).
+config :revenue_api, RevenueApi.Guardian,
+  secret_key: "dev_only_guardian_secret_do_not_use_in_prod_kJ8fQ2mZ"
+
+config :revenue_api, :receipt_signing_key, "dev_only_receipt_signing_key_do_not_use_in_prod"
