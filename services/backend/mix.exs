@@ -72,7 +72,23 @@ defmodule RevenueApi.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:guardian, "~> 2.3"},
+      # Pinned: 1.11.11+ reintroduced dynamic()/OTP :json-module specs that only
+      # compile under OTP 27+; this host runs OTP 25, and jose compiles with
+      # warnings_as_errors outside :prod, so any newer release breaks `mix compile`.
+      {:jose, "== 1.11.10", override: true},
+      {:comeonin, "~> 5.5"},
+      {:argon2_elixir, "~> 4.0"},
+      {:oban, "~> 2.18"},
+      {:chromic_pdf, "~> 1.17"},
+      {:eqrcode, "~> 0.2"},
+      {:hammer, "~> 6.2"},
+      {:req_s3, "~> 0.2.5"},
+      {:nimble_csv, "~> 1.2"},
+      {:cors_plug, "~> 3.0"},
+      {:mox, "~> 1.1", only: :test},
+      {:ex_machina, "~> 2.8", only: :test}
     ]
   end
 
