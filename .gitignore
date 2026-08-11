@@ -1,0 +1,31 @@
+# --- Elixir / Phoenix (services/backend) ---
+services/backend/_build/
+services/backend/deps/
+services/backend/.elixir_ls/
+services/backend/erl_crash.dump
+services/backend/*.ez
+services/backend/services/backend-*.tar
+services/backend/priv/static/assets/
+services/backend/assets/node_modules/
+services/backend/config/*.secret.exs
+services/backend/.env
+services/backend/uploads/
+
+# --- Flutter / Dart (services/mobile) ---
+services/mobile/.dart_tool/
+services/mobile/.flutter-plugins
+services/mobile/.flutter-plugins-dependencies
+services/mobile/.packages
+services/mobile/build/
+services/mobile/*.iml
+services/mobile/.idea/
+services/mobile/ios/Pods/
+services/mobile/ios/.symlinks/
+services/mobile/android/.gradle/
+services/mobile/android/local.properties
+
+# --- General ---
+.DS_Store
+*.log
+.env
+.envrc

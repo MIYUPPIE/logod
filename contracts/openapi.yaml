@@ -1,0 +1,705 @@
+openapi: 3.0.3
+info:
+  title: Local Government Digital Seller Registration & Revenue Management API
+  version: 0.1.0
+  description: >
+    MVP API contract. This file is the single source of truth shared by
+    services/backend (Phoenix) and services/mobile (Flutter). Any breaking
+    change bumps `info.version` and must be reflected in both services in the
+    same change.
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: localhost:4000
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+  - name: sellers
+  - name: levy-types
+  - name: payments
+  - name: receipts
+  - name: sync
+  - name: dashboard
+  - name: reports
+  - name: admin
+  - name: geo
+
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      summary: Login with email/phone + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string, description: "email or phone" }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      summary: Exchange a refresh token for a new access + refresh token pair (rotating)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the current refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "204": { description: No Content }
+
+  /sellers:
+    post:
+      tags: [sellers]
+      summary: Register a seller (idempotent on client_uuid)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SellerCreateRequest" }
+      responses:
+        "201":
+          description: Created (or already-existing for a repeated client_uuid)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Seller" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /sellers/{id}:
+    get:
+      tags: [sellers]
+      summary: Get seller by canonical ID
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Seller" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sellers/search:
+    get:
+      tags: [sellers]
+      summary: Search sellers by seller_uid, phone, or business name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Seller" }
+
+  /sellers/qr/{seller_uid}:
+    get:
+      tags: [sellers]
+      summary: Look up a seller by scanned QR payload (seller_uid)
+      parameters:
+        - name: seller_uid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Seller" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sellers/{id}/payments:
+    get:
+      tags: [sellers]
+      summary: List payments for a seller
+      parameters:
+        - $ref: "#/components/parameters/SellerId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Payment" }
+
+  /levy-types:
+    get:
+      tags: [levy-types]
+      summary: List levy types for an LGA
+      parameters:
+        - name: lga_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LevyType" }
+
+  /payments:
+    post:
+      tags: [payments]
+      summary: Record a payment (idempotent on client_uuid)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentCreateRequest" }
+      responses:
+        "201":
+          description: Created (or already-existing for a repeated client_uuid)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /payments/{id}:
+    get:
+      tags: [payments]
+      summary: Get payment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /receipts/{id}/pdf:
+    get:
+      tags: [receipts]
+      summary: Download the signed receipt PDF (authenticated - owner agent, seller, admin, or supervisor)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: PDF binary
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /verify/{receipt_qr_payload}:
+    get:
+      tags: [receipts]
+      security: []
+      summary: Public receipt verification (no auth, no PII beyond what's on the physical receipt)
+      parameters:
+        - name: receipt_qr_payload
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceiptVerification" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /sync/batch:
+    post:
+      tags: [sync]
+      summary: Bulk-upload queued offline records (registrations + payments), max 200 per request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SyncBatchRequest" }
+      responses:
+        "200":
+          description: Per-record results, always 200 even if individual records failed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SyncBatchResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  /dashboard/summary:
+    get:
+      tags: [dashboard]
+      summary: Supervisor/admin live summary - today's totals, active agents, pending sync queue
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /reports/revenue:
+    get:
+      tags: [reports]
+      summary: Revenue report, CSV or JSON
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: format
+          in: query
+          required: false
+          schema: { type: string, enum: [csv, json], default: json }
+      responses:
+        "200":
+          description: OK
+          content:
+            text/csv:
+              schema: { type: string }
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Payment" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: List users (admin only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin]
+      summary: Create a user/agent (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/levy-types/{id}:
+    patch:
+      tags: [admin]
+      summary: Update a levy type's amount/frequency (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, format: decimal }
+                frequency: { $ref: "#/components/schemas/LevyFrequency" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LevyType" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /geo/states:
+    get:
+      tags: [geo]
+      summary: List states (for registration form cascading picker)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeoNode" }
+
+  /geo/lgas:
+    get:
+      tags: [geo]
+      summary: List LGAs for a state
+      parameters:
+        - name: state_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeoNode" }
+
+  /geo/wards:
+    get:
+      tags: [geo]
+      summary: List wards for an LGA
+      parameters:
+        - name: lga_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeoNode" }
+
+  /geo/markets:
+    get:
+      tags: [geo]
+      summary: List markets for a ward
+      parameters:
+        - name: ward_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeoNode" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    SellerId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing/invalid credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Authenticated but not authorized for this action/LGA
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties: true
+
+    Role:
+      type: string
+      enum: [admin, supervisor, agent, seller]
+
+    LevyFrequency:
+      type: string
+      enum: [daily, weekly, monthly, one_off]
+
+    PaymentMethod:
+      type: string
+      enum: [cash, pos, transfer]
+
+    PaymentStatus:
+      type: string
+      enum: [pending_sync, synced, flagged, duplicate_suspected]
+
+    AuthTokens:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, description: "seconds" }
+        user: { $ref: "#/components/schemas/User" }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        lga_id: { type: integer, nullable: true }
+        device_id: { type: string, nullable: true }
+        active: { type: boolean }
+
+    UserCreateRequest:
+      type: object
+      required: [name, role]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        password: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        lga_id: { type: integer, nullable: true }
+
+    GeoNode:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string, nullable: true }
+
+    SellerCreateRequest:
+      type: object
+      required: [client_uuid, full_name, phone, dob, gender, business_name, business_category, market_id, ward_id, lga_id, state_id, lat, lng]
+      properties:
+        client_uuid: { type: string, format: uuid }
+        full_name: { type: string }
+        photo_base64: { type: string, nullable: true, description: "multipart upload preferred; base64 accepted for offline sync payloads" }
+        phone: { type: string }
+        nin: { type: string, nullable: true, pattern: "^[0-9]{11}$" }
+        dob: { type: string, format: date }
+        gender: { type: string, enum: [male, female, other] }
+        home_address: { type: string, nullable: true }
+        business_name: { type: string }
+        business_category: { type: string }
+        shop_number: { type: string, nullable: true }
+        market_id: { type: integer }
+        ward_id: { type: integer }
+        lga_id: { type: integer }
+        state_id: { type: integer }
+        lat: { type: number, format: double }
+        lng: { type: number, format: double }
+        gps_accuracy: { type: number, format: double, nullable: true }
+        gps_captured_at: { type: string, format: date-time, nullable: true }
+
+    Seller:
+      type: object
+      properties:
+        id: { type: integer }
+        seller_uid: { type: string, nullable: true, description: "null until first successful sync assigns it" }
+        client_uuid: { type: string, format: uuid }
+        full_name: { type: string }
+        photo_url: { type: string, nullable: true }
+        phone: { type: string }
+        nin: { type: string, nullable: true }
+        dob: { type: string, format: date }
+        gender: { type: string }
+        home_address: { type: string, nullable: true }
+        business_name: { type: string }
+        business_category: { type: string }
+        shop_number: { type: string, nullable: true }
+        market_id: { type: integer }
+        ward_id: { type: integer }
+        lga_id: { type: integer }
+        state_id: { type: integer }
+        lat: { type: number, format: double }
+        lng: { type: number, format: double }
+        gps_accuracy: { type: number, format: double, nullable: true }
+        gps_captured_at: { type: string, format: date-time, nullable: true }
+        registered_by_user_id: { type: integer }
+        qr_payload: { type: string, nullable: true }
+        duplicate_suspected: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    LevyType:
+      type: object
+      properties:
+        id: { type: integer }
+        lga_id: { type: integer }
+        name: { type: string }
+        amount: { type: number, format: decimal }
+        frequency: { $ref: "#/components/schemas/LevyFrequency" }
+
+    PaymentCreateRequest:
+      type: object
+      required: [client_uuid, seller_id, levy_type_id, method, paid_at]
+      properties:
+        client_uuid: { type: string, format: uuid }
+        seller_id: { type: integer }
+        levy_type_id: { type: integer }
+        method: { $ref: "#/components/schemas/PaymentMethod" }
+        paid_at: { type: string, format: date-time }
+
+    Payment:
+      type: object
+      properties:
+        id: { type: integer }
+        client_uuid: { type: string, format: uuid }
+        seller_id: { type: integer }
+        levy_type_id: { type: integer }
+        amount: { type: number, format: decimal }
+        method: { $ref: "#/components/schemas/PaymentMethod" }
+        agent_id: { type: integer }
+        receipt_no: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/PaymentStatus" }
+        paid_at: { type: string, format: date-time }
+        synced_at: { type: string, format: date-time, nullable: true }
+
+    ReceiptVerification:
+      type: object
+      properties:
+        valid: { type: boolean }
+        receipt_no: { type: string }
+        amount: { type: number, format: decimal }
+        business_name: { type: string }
+        levy_type_name: { type: string }
+        paid_at: { type: string, format: date-time }
+
+    SyncRecord:
+      type: object
+      required: [type, client_uuid, payload]
+      properties:
+        type: { type: string, enum: [seller, payment] }
+        client_uuid: { type: string, format: uuid }
+        payload:
+          oneOf:
+            - { $ref: "#/components/schemas/SellerCreateRequest" }
+            - { $ref: "#/components/schemas/PaymentCreateRequest" }
+
+    SyncBatchRequest:
+      type: object
+      required: [records]
+      properties:
+        records:
+          type: array
+          maxItems: 200
+          items: { $ref: "#/components/schemas/SyncRecord" }
+
+    SyncResult:
+      type: object
+      properties:
+        client_uuid: { type: string, format: uuid }
+        status: { type: string, enum: [synced, flagged, error] }
+        canonical_id: { type: integer, nullable: true }
+        seller_uid: { type: string, nullable: true }
+        receipt_no: { type: string, nullable: true }
+        reason: { type: string, nullable: true }
+
+    SyncBatchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/SyncResult" }
+
+    DashboardSummary:
+      type: object
+      properties:
+        today_total_amount: { type: number, format: decimal }
+        today_payment_count: { type: integer }
+        active_agents:
+          type: array
+          items:
+            type: object
+            properties:
+              agent_id: { type: integer }
+              name: { type: string }
+              last_seen_at: { type: string, format: date-time, nullable: true }
+              today_total: { type: number, format: decimal }
+        pending_sync_count: { type: integer }
+        flagged:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [seller, payment] }
+              id: { type: integer }
+              reason: { type: string }
