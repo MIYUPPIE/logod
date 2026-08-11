@@ -85,6 +85,7 @@ defmodule RevenueApi.Payments do
           )
 
           {:ok, _job} = Oban.insert(ProcessPaymentWorker.new(%{"payment_id" => payment.id}))
+          Phoenix.PubSub.broadcast(RevenueApi.PubSub, "dashboard", :refresh)
 
           Repo.preload(payment, [:seller, :levy_type, :agent])
 

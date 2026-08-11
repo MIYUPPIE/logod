@@ -93,6 +93,7 @@ defmodule RevenueApi.Sellers do
                 })
               )
 
+              Phoenix.PubSub.broadcast(RevenueApi.PubSub, "dashboard", :refresh)
               Repo.preload(seller, [:market, :ward, :lga, :state])
 
             {:error, changeset} ->

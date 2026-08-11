@@ -28,6 +28,10 @@ defmodule RevenueApiWeb.Router do
     plug RevenueApiWeb.Plugs.RequireRole, [:admin]
   end
 
+  pipeline :require_web_admin_or_supervisor do
+    plug RevenueApiWeb.Plugs.RequireWebRole, [:admin, :supervisor]
+  end
+
   scope "/api/v1", RevenueApiWeb do
     pipe_through :api
 
@@ -89,6 +93,12 @@ defmodule RevenueApiWeb.Router do
     get "/login", SessionController, :new
     post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
+  end
+
+  scope "/admin", RevenueApiWeb do
+    pipe_through [:browser, :require_web_admin_or_supervisor]
+
+    get "/reports/revenue.csv", Admin.ReportDownloadController, :revenue
   end
 
   scope "/", RevenueApiWeb do
