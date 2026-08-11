@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is needed to capture seller photos and scan seller QR codes.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location access is needed to capture GPS coordinates when registering a seller.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is needed to attach a seller photo.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
