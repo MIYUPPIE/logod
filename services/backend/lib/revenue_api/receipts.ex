@@ -10,6 +10,8 @@ defmodule RevenueApi.Receipts do
   alias RevenueApi.Receipts.Receipt
   alias RevenueApi.Payments.Payment
 
+  def get(id), do: Repo.get(Receipt, id)
+
   def get_by_payment_id(payment_id), do: Repo.get_by(Receipt, payment_id: payment_id)
 
   def get_by_qr_payload(qr_payload) do

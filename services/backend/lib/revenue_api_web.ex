@@ -43,6 +43,7 @@ defmodule RevenueApiWeb do
       use Gettext, backend: RevenueApiWeb.Gettext
 
       import Plug.Conn
+      import RevenueApiWeb.ControllerHelpers
 
       unquote(verified_routes())
     end
