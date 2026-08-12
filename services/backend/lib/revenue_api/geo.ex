@@ -48,8 +48,7 @@ defmodule RevenueApi.Geo do
         on: l.id == w.lga_id,
         join: s in State,
         on: s.id == l.state_id,
-        where:
-          m.id == ^market_id and w.id == ^ward_id and l.id == ^lga_id and s.id == ^state_id
+        where: m.id == ^market_id and w.id == ^ward_id and l.id == ^lga_id and s.id == ^state_id
     )
   end
 end

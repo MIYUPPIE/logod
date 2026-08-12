@@ -54,8 +54,9 @@ defmodule RevenueApi.Payments do
 
     with %{} = seller <- Sellers.get_seller(seller_id) || {:error, :seller_not_found},
          :ok <- authorize_lga(actor, seller.lga_id),
-         %{} = levy_type <- Levies.get_active_levy_type(levy_type_id, seller.lga_id) ||
-                               {:error, :levy_type_not_found} do
+         %{} = levy_type <-
+           Levies.get_active_levy_type(levy_type_id, seller.lga_id) ||
+             {:error, :levy_type_not_found} do
       insert_payment(attrs, seller, levy_type, actor, request_context)
     end
   end

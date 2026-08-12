@@ -29,7 +29,8 @@ defmodule RevenueApi.Accounts.RefreshToken do
         %{
           user_id: user_id,
           token_hash: hash,
-          expires_at: DateTime.utc_now() |> DateTime.add(@ttl_days, :day) |> DateTime.truncate(:second)
+          expires_at:
+            DateTime.utc_now() |> DateTime.add(@ttl_days, :day) |> DateTime.truncate(:second)
         },
         [:user_id, :token_hash, :expires_at]
       )

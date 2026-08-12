@@ -28,7 +28,8 @@ defmodule RevenueApi.Dashboard do
     flagged = flagged(actor)
 
     %{
-      today_total_amount: Enum.reduce(today_payments, Decimal.new(0), fn {a, _}, acc -> Decimal.add(acc, a) end),
+      today_total_amount:
+        Enum.reduce(today_payments, Decimal.new(0), fn {a, _}, acc -> Decimal.add(acc, a) end),
       today_payment_count: length(today_payments),
       active_agents: active_agents(actor, today_payments),
       # The server only ever sees a record once it's synced, so it can't

@@ -9,8 +9,11 @@ defmodule RevenueApiWeb.VerifyController do
     case RateLimiter.check_verify(ip) do
       {:allow, _count} ->
         case Receipts.verify(qr_payload) do
-          {:ok, result} -> json(conn, result)
-          {:error, :not_found} -> conn |> put_status(:not_found) |> json(%{errors: %{detail: "not_found"}})
+          {:ok, result} ->
+            json(conn, result)
+
+          {:error, :not_found} ->
+            conn |> put_status(:not_found) |> json(%{errors: %{detail: "not_found"}})
         end
 
       {:deny, _} ->

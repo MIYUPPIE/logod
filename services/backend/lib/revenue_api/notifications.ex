@@ -15,15 +15,18 @@ defmodule RevenueApi.Notifications do
 
     case RevenueApi.Notifier.send_sms(payment.seller.phone, message) do
       {:ok, provider_ref} ->
-        log(payment, message, "sent", provider_ref)
+        {:ok, _log} = log(payment, message, "sent", provider_ref)
+        {:ok, provider_ref}
 
       {:error, reason} ->
-        log(payment, message, "failed", nil)
+        {:ok, _log} = log(payment, message, "failed", nil)
         {:error, reason}
     end
   end
 
   defp log(payment, message, status, provider_ref) do
+    sent_at = if status == "sent", do: DateTime.utc_now() |> DateTime.truncate(:second)
+
     %SmsLog{}
     |> SmsLog.changeset(%{
       payment_id: payment.id,
@@ -31,7 +34,7 @@ defmodule RevenueApi.Notifications do
       message: message,
       status: status,
       provider_ref: provider_ref,
-      sent_at: status == "sent" && DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at: sent_at
     })
     |> Repo.insert()
   end

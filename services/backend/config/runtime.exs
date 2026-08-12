@@ -115,8 +115,9 @@ if config_env() == :prod do
   config :revenue_api, :storage_s3, bucket: System.get_env("S3_BUCKET", "revenue-mvp-uploads")
 
   # Comma-separated allowlist, e.g. "https://admin.example.com,https://agent.example.com"
-  config :revenue_api, :cors_origins,
-    (System.get_env("CORS_ORIGINS") || "") |> String.split(",", trim: true)
+  config :revenue_api,
+         :cors_origins,
+         (System.get_env("CORS_ORIGINS") || "") |> String.split(",", trim: true)
 
   # ## SSL Support
   #

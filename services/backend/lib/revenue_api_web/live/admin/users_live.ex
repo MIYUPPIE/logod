@@ -40,7 +40,12 @@ defmodule RevenueApiWeb.Admin.UsersLive do
     <Layouts.app flash={@flash} current_scope={@current_user}>
       <h1 class="text-xl font-semibold mb-6">Users &amp; Agents</h1>
 
-      <.form for={@form} phx-change="validate" phx-submit="save" class="grid grid-cols-2 gap-2 mb-8 max-w-2xl">
+      <.form
+        for={@form}
+        phx-change="validate"
+        phx-submit="save"
+        class="grid grid-cols-2 gap-2 mb-8 max-w-2xl"
+      >
         <.input field={@form[:name]} label="Name" />
         <.input field={@form[:email]} label="Email" />
         <.input field={@form[:phone]} label="Phone" />
@@ -56,13 +61,21 @@ defmodule RevenueApiWeb.Admin.UsersLive do
           type="select"
           label="LGA"
           prompt="State-level (all LGAs)"
-          options={Enum.flat_map(@states, fn s -> Enum.map(Geo.list_lgas(s.id), &{"#{s.name} / #{&1.name}", &1.id}) end)}
+          options={
+            Enum.flat_map(@states, fn s ->
+              Enum.map(Geo.list_lgas(s.id), &{"#{s.name} / #{&1.name}", &1.id})
+            end)
+          }
         />
         <button type="submit" class="btn btn-primary col-span-2">Create User</button>
       </.form>
 
       <table class="table">
-        <thead><tr><th>Name</th><th>Role</th><th>Contact</th><th>Active</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Name</th><th>Role</th><th>Contact</th><th>Active</th>
+          </tr>
+        </thead>
         <tbody>
           <tr :for={user <- @users}>
             <td>{user.name}</td>

@@ -52,7 +52,8 @@ defmodule RevenueApi.Receipts do
   """
   def verify(qr_payload) do
     with %Receipt{} = receipt <- get_by_qr_payload(qr_payload),
-         %Payment{} = payment <- Repo.get(Payment, receipt.payment_id) |> Repo.preload([:seller, :levy_type]) do
+         %Payment{} = payment <-
+           Repo.get(Payment, receipt.payment_id) |> Repo.preload([:seller, :levy_type]) do
       valid? = sign(payment) == receipt.signed_hash
 
       {:ok,

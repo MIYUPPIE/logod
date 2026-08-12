@@ -23,12 +23,22 @@ defmodule RevenueApi.Reports do
   end
 
   defp scope(query, %{role: :admin, lga_id: nil}), do: query
+
   defp scope(query, %{lga_id: lga_id}) do
     from [p, a] in query, where: a.lga_id == ^lga_id
   end
 
   def to_csv(payments) do
-    header = ["receipt_no", "seller_uid", "business_name", "levy_type", "amount", "method", "agent", "paid_at"]
+    header = [
+      "receipt_no",
+      "seller_uid",
+      "business_name",
+      "levy_type",
+      "amount",
+      "method",
+      "agent",
+      "paid_at"
+    ]
 
     rows =
       Enum.map(payments, fn p ->

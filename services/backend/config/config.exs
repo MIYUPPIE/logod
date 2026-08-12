@@ -44,8 +44,7 @@ config :revenue_api, Oban,
   plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
 
 config :hammer,
-  backend:
-    {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
 
 # Swapped per-env: Notifier.Console in dev, NotifierMock (Mox) in test,
 # Notifier.Termii in prod. See specs/mvp_design.md "SMS Confirmation".

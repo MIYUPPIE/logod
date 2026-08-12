@@ -38,7 +38,9 @@ defmodule RevenueApiWeb.SupervisorDashboardLive do
       <h2 class="text-lg font-semibold mb-2">Active Agents</h2>
       <table class="table mb-8">
         <thead>
-          <tr><th>Agent</th><th>Today's Total</th></tr>
+          <tr>
+            <th>Agent</th><th>Today's Total</th>
+          </tr>
         </thead>
         <tbody>
           <tr :for={agent <- @summary.active_agents}>
@@ -54,7 +56,9 @@ defmodule RevenueApiWeb.SupervisorDashboardLive do
       <h2 class="text-lg font-semibold mb-2">Flagged for Review</h2>
       <table class="table">
         <thead>
-          <tr><th>Type</th><th>ID</th><th>Reason</th></tr>
+          <tr>
+            <th>Type</th><th>ID</th><th>Reason</th>
+          </tr>
         </thead>
         <tbody>
           <tr :for={item <- @summary.flagged}>

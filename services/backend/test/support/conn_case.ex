@@ -35,4 +35,10 @@ defmodule RevenueApiWeb.ConnCase do
     RevenueApi.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  @doc "Puts a valid Bearer access token for `user` on `conn`."
+  def authed(conn, user) do
+    {:ok, token, _claims} = RevenueApi.Guardian.encode_and_sign(user, %{}, ttl: {15, :minute})
+    Plug.Conn.put_req_header(conn, "authorization", "Bearer #{token}")
+  end
 end

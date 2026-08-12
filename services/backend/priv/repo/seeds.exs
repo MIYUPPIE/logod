@@ -29,16 +29,43 @@ upsert = fn struct, changes, conflict_target, replace_fields ->
 end
 
 states = [
-  {"Abia", "ABI"}, {"Adamawa", "ADA"}, {"Akwa Ibom", "AKW"}, {"Anambra", "ANA"},
-  {"Bauchi", "BAU"}, {"Bayelsa", "BAY"}, {"Benue", "BEN"}, {"Borno", "BOR"},
-  {"Cross River", "CRO"}, {"Delta", "DEL"}, {"Ebonyi", "EBO"}, {"Edo", "EDO"},
-  {"Ekiti", "EKI"}, {"Enugu", "ENU"}, {"Federal Capital Territory", "FCT"},
-  {"Gombe", "GOM"}, {"Imo", "IMO"}, {"Jigawa", "JIG"}, {"Kaduna", "KAD"},
-  {"Kano", "KAN"}, {"Katsina", "KAT"}, {"Kebbi", "KEB"}, {"Kogi", "KOG"},
-  {"Kwara", "KWA"}, {"Lagos", "LAG"}, {"Nasarawa", "NAS"}, {"Niger", "NIG"},
-  {"Ogun", "OGU"}, {"Ondo", "OND"}, {"Osun", "OSU"}, {"Oyo", "OYO"},
-  {"Plateau", "PLA"}, {"Rivers", "RIV"}, {"Sokoto", "SOK"}, {"Taraba", "TAR"},
-  {"Yobe", "YOB"}, {"Zamfara", "ZAM"}
+  {"Abia", "ABI"},
+  {"Adamawa", "ADA"},
+  {"Akwa Ibom", "AKW"},
+  {"Anambra", "ANA"},
+  {"Bauchi", "BAU"},
+  {"Bayelsa", "BAY"},
+  {"Benue", "BEN"},
+  {"Borno", "BOR"},
+  {"Cross River", "CRO"},
+  {"Delta", "DEL"},
+  {"Ebonyi", "EBO"},
+  {"Edo", "EDO"},
+  {"Ekiti", "EKI"},
+  {"Enugu", "ENU"},
+  {"Federal Capital Territory", "FCT"},
+  {"Gombe", "GOM"},
+  {"Imo", "IMO"},
+  {"Jigawa", "JIG"},
+  {"Kaduna", "KAD"},
+  {"Kano", "KAN"},
+  {"Katsina", "KAT"},
+  {"Kebbi", "KEB"},
+  {"Kogi", "KOG"},
+  {"Kwara", "KWA"},
+  {"Lagos", "LAG"},
+  {"Nasarawa", "NAS"},
+  {"Niger", "NIG"},
+  {"Ogun", "OGU"},
+  {"Ondo", "OND"},
+  {"Osun", "OSU"},
+  {"Oyo", "OYO"},
+  {"Plateau", "PLA"},
+  {"Rivers", "RIV"},
+  {"Sokoto", "SOK"},
+  {"Taraba", "TAR"},
+  {"Yobe", "YOB"},
+  {"Zamfara", "ZAM"}
 ]
 
 state_records =
@@ -49,12 +76,26 @@ state_records =
 lagos = Enum.find(state_records, &(&1.code == "LAG"))
 
 lagos_lgas = [
-  {"Agege", "AGE"}, {"Ajeromi-Ifelodun", "AJE"}, {"Alimosho", "ALI"},
-  {"Amuwo-Odofin", "AMU"}, {"Apapa", "APA"}, {"Badagry", "BAD"}, {"Epe", "EPE"},
-  {"Eti-Osa", "ETI"}, {"Ibeju-Lekki", "IBE"}, {"Ifako-Ijaiye", "IFA"},
-  {"Ikeja", "IKJ"}, {"Ikorodu", "IKO"}, {"Kosofe", "KOS"}, {"Lagos Island", "LIS"},
-  {"Lagos Mainland", "LMA"}, {"Mushin", "MUS"}, {"Ojo", "OJO"},
-  {"Oshodi-Isolo", "OSH"}, {"Somolu", "SOM"}, {"Surulere", "SUR"}
+  {"Agege", "AGE"},
+  {"Ajeromi-Ifelodun", "AJE"},
+  {"Alimosho", "ALI"},
+  {"Amuwo-Odofin", "AMU"},
+  {"Apapa", "APA"},
+  {"Badagry", "BAD"},
+  {"Epe", "EPE"},
+  {"Eti-Osa", "ETI"},
+  {"Ibeju-Lekki", "IBE"},
+  {"Ifako-Ijaiye", "IFA"},
+  {"Ikeja", "IKJ"},
+  {"Ikorodu", "IKO"},
+  {"Kosofe", "KOS"},
+  {"Lagos Island", "LIS"},
+  {"Lagos Mainland", "LMA"},
+  {"Mushin", "MUS"},
+  {"Ojo", "OJO"},
+  {"Oshodi-Isolo", "OSH"},
+  {"Somolu", "SOM"},
+  {"Surulere", "SUR"}
 ]
 
 lga_records =

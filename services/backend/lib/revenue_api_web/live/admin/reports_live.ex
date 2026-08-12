@@ -54,7 +54,9 @@ defmodule RevenueApiWeb.Admin.ReportsLive do
         </div>
         <button type="submit" class="btn btn-primary">Filter</button>
         <a
-          href={~p"/admin/reports/revenue.csv?from=#{Date.to_iso8601(@from)}&to=#{Date.to_iso8601(@to)}"}
+          href={
+            ~p"/admin/reports/revenue.csv?from=#{Date.to_iso8601(@from)}&to=#{Date.to_iso8601(@to)}"
+          }
           class="btn btn-outline"
         >
           Download CSV
@@ -63,7 +65,11 @@ defmodule RevenueApiWeb.Admin.ReportsLive do
 
       <table class="table">
         <thead>
-          <tr><th>Receipt</th><th>Seller</th><th>Levy</th><th>Amount</th><th>Method</th><th>Agent</th><th>Date</th></tr>
+          <tr>
+            <th>Receipt</th><th>Seller</th><th>Levy</th><th>Amount</th><th>Method</th><th>Agent</th><th>
+              Date
+            </th>
+          </tr>
         </thead>
         <tbody>
           <tr :for={p <- @payments}>
