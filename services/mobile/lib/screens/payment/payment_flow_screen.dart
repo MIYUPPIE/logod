@@ -143,6 +143,7 @@ class _PaymentFlowScreenState extends ConsumerState<PaymentFlowScreen> {
                     if (_selectedLevyType != null) ...[
                       const Divider(height: 32),
                       Card(
+                        key: const Key('payment_amount_card'),
                         color: Theme.of(context).colorScheme.primaryContainer,
                         child: Padding(
                           padding: const EdgeInsets.all(16),

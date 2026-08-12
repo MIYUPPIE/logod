@@ -95,10 +95,17 @@ class ReceiptScreen extends StatelessWidget {
   Widget _row(String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label, style: const TextStyle(color: Colors.black54)),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
           ],
         ),
       );
