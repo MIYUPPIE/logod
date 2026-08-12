@@ -83,6 +83,18 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# SRS §8: passwords never logged. Phoenix's default request logger prints
+# `Parameters: %{...}` at debug level with no filtering unless configured -
+# without this, every login/user-creation POST body would have the raw
+# password in the log file.
+config :phoenix, :filter_parameters, [
+  "password",
+  "password_hash",
+  "access_token",
+  "refresh_token",
+  "api_key"
+]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

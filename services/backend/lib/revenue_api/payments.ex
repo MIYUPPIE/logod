@@ -53,7 +53,7 @@ defmodule RevenueApi.Payments do
     levy_type_id = attrs[:levy_type_id] || attrs["levy_type_id"]
 
     with %{} = seller <- Sellers.get_seller(seller_id) || {:error, :seller_not_found},
-         :ok <- authorize_lga(actor, seller.lga_id),
+         :ok <- RevenueApi.Authz.authorize_lga(actor, seller.lga_id),
          %{} = levy_type <-
            Levies.get_active_levy_type(levy_type_id, seller.lga_id) ||
              {:error, :levy_type_not_found} do
@@ -95,12 +95,6 @@ defmodule RevenueApi.Payments do
       end
     end)
   end
-
-  defp authorize_lga(%{role: :agent, lga_id: agent_lga_id}, seller_lga_id) do
-    if agent_lga_id == seller_lga_id, do: :ok, else: {:error, :forbidden}
-  end
-
-  defp authorize_lga(_actor, _lga_id), do: :ok
 
   defp generate_receipt_no(seller) do
     lga = RevenueApi.Geo.get_lga!(seller.lga_id)

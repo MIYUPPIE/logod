@@ -112,17 +112,57 @@ defmodule RevenueApi.SellersTest do
       assert log.entity_id == to_string(seller.id)
       assert log.user_id == agent.id
     end
+
+    test "a client-supplied photo_url is ignored, not stored verbatim", %{
+      agent: agent,
+      attrs: attrs
+    } do
+      attrs = Map.put(attrs, "photo_url", "https://evil.example.com/not-a-real-key")
+      {:ok, seller} = Sellers.register(attrs, agent, %{})
+      refute seller.photo_url == "https://evil.example.com/not-a-real-key"
+      assert seller.photo_url == nil
+    end
+
+    test "a valid photo_base64 is stored and photo_url becomes the real storage key", %{
+      agent: agent,
+      attrs: attrs
+    } do
+      png = Base.encode64(<<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0>>)
+      attrs = Map.put(attrs, "photo_base64", png)
+
+      {:ok, seller} = Sellers.register(attrs, agent, %{})
+      assert String.starts_with?(seller.photo_url, "sellers/photos/")
+      assert {:ok, _binary} = RevenueApi.Storage.fetch(seller.photo_url)
+    end
   end
 
-  describe "search/1" do
-    test "finds by seller_uid, phone, or business name", %{agent: agent, attrs: attrs} do
+  describe "search/2" do
+    test "finds by seller_uid, phone, or business name, scoped to the actor's LGA", %{
+      agent: agent,
+      attrs: attrs
+    } do
       {:ok, seller} = Sellers.register(attrs, agent, %{})
 
-      assert [found] = Sellers.search(seller.seller_uid)
+      assert [found] = Sellers.search(seller.seller_uid, agent)
       assert found.id == seller.id
-      assert [_] = Sellers.search("08031111111")
-      assert [_] = Sellers.search("Amaka Store")
-      assert [] == Sellers.search("nonexistent-xyz")
+      assert [_] = Sellers.search("08031111111", agent)
+      assert [_] = Sellers.search("Amaka Store", agent)
+      assert [] == Sellers.search("nonexistent-xyz", agent)
+    end
+
+    test "an admin (lga_id nil) can search across all LGAs", %{agent: agent, attrs: attrs} do
+      {:ok, seller} = Sellers.register(attrs, agent, %{})
+      admin = insert(:admin)
+
+      assert [found] = Sellers.search(seller.seller_uid, admin)
+      assert found.id == seller.id
+    end
+
+    test "a different LGA's agent finds nothing", %{agent: agent, attrs: attrs} do
+      {:ok, seller} = Sellers.register(attrs, agent, %{})
+      other_agent = insert(:agent)
+
+      assert [] == Sellers.search(seller.seller_uid, other_agent)
     end
   end
 end

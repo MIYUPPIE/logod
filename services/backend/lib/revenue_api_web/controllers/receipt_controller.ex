@@ -1,7 +1,7 @@
 defmodule RevenueApiWeb.ReceiptController do
   use RevenueApiWeb, :controller
 
-  alias RevenueApi.{Receipts, Payments, Storage}
+  alias RevenueApi.{Receipts, Payments, Storage, Authz}
 
   action_fallback RevenueApiWeb.FallbackController
 
@@ -17,7 +17,11 @@ defmodule RevenueApiWeb.ReceiptController do
     end
   end
 
-  defp authorize(%{role: role}, _payment) when role in [:admin, :supervisor], do: :ok
   defp authorize(%{role: :agent, id: id}, %{agent_id: id}), do: :ok
+
+  defp authorize(%{role: role} = user, payment) when role in [:admin, :supervisor] do
+    Authz.authorize_lga(user, payment.seller.lga_id)
+  end
+
   defp authorize(_user, _payment), do: {:error, :forbidden}
 end

@@ -29,19 +29,27 @@ defmodule RevenueApi.Sellers do
     Repo.one(from s in Seller, where: s.client_uuid == ^client_uuid)
   end
 
-  def search(query) when is_binary(query) do
+  @doc """
+  Scoped to `actor`'s LGA (agent/supervisor/LGA-scoped admin only ever see
+  their own LGA's sellers); a state-level admin (lga_id nil) sees all.
+  """
+  def search(query, actor) when is_binary(query) do
     like = "%#{query}%"
 
-    Repo.all(
-      from s in Seller,
-        where:
-          is_nil(s.deleted_at) and
-            (ilike(s.seller_uid, ^like) or ilike(s.phone, ^like) or
-               ilike(s.business_name, ^like)),
-        order_by: s.full_name,
-        limit: 25
+    from(s in Seller,
+      where:
+        is_nil(s.deleted_at) and
+          (ilike(s.seller_uid, ^like) or ilike(s.phone, ^like) or
+             ilike(s.business_name, ^like)),
+      order_by: s.full_name,
+      limit: 25
     )
+    |> scope_to_lga(actor)
+    |> Repo.all()
   end
+
+  defp scope_to_lga(query, %{lga_id: nil}), do: query
+  defp scope_to_lga(query, %{lga_id: lga_id}), do: from(s in query, where: s.lga_id == ^lga_id)
 
   @doc """
   Registers a seller. Idempotent on `client_uuid`: a retried call with the
@@ -68,8 +76,9 @@ defmodule RevenueApi.Sellers do
   defp do_register(attrs, actor, request_context) do
     lga_id = attrs[:lga_id] || attrs["lga_id"]
 
-    with :ok <- authorize_lga(actor, lga_id),
-         :ok <- validate_hierarchy(attrs) do
+    with :ok <- RevenueApi.Authz.authorize_lga(actor, lga_id),
+         :ok <- validate_hierarchy(attrs),
+         {:ok, attrs} <- resolve_photo(attrs) do
       Repo.transaction(fn ->
         attrs =
           attrs
@@ -111,11 +120,29 @@ defmodule RevenueApi.Sellers do
     end
   end
 
-  defp authorize_lga(%{role: :agent, lga_id: agent_lga_id}, lga_id) do
-    if agent_lga_id == lga_id, do: :ok, else: {:error, :forbidden}
-  end
+  @doc false
+  # Never lets a client-supplied `photo_url` through - only a storage key
+  # this function itself just produced via Uploads is trustworthy there.
+  # Found during a security review: the changeset previously cast whatever
+  # string the client sent straight into `photo_url`, which is then handed
+  # to Storage.signed_url/1 at read time - not exploitable for SSRF against
+  # the Local adapter, but it meant the "photo" field was never actually
+  # validated or stored server-side despite being in scope per SRS §2.
+  defp resolve_photo(attrs) do
+    attrs = Map.drop(attrs, [:photo_url, "photo_url"])
+    photo_base64 = attrs[:photo_base64] || attrs["photo_base64"]
 
-  defp authorize_lga(_actor, _lga_id), do: :ok
+    case photo_base64 do
+      nil ->
+        {:ok, attrs}
+
+      base64 ->
+        case RevenueApi.Uploads.store_seller_photo(base64) do
+          {:ok, key} -> {:ok, Map.put(attrs, "photo_url", key)}
+          {:error, reason} -> {:error, reason}
+        end
+    end
+  end
 
   defp validate_hierarchy(attrs) do
     market_id = attrs[:market_id] || attrs["market_id"]

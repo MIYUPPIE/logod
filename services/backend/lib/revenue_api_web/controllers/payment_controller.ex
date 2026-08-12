@@ -1,7 +1,7 @@
 defmodule RevenueApiWeb.PaymentController do
   use RevenueApiWeb, :controller
 
-  alias RevenueApi.Payments
+  alias RevenueApi.{Payments, Authz}
 
   action_fallback RevenueApiWeb.FallbackController
 
@@ -12,9 +12,9 @@ defmodule RevenueApiWeb.PaymentController do
   end
 
   def show(conn, %{"id" => id}) do
-    case Payments.get_payment(id) do
-      nil -> {:error, :not_found}
-      payment -> render(conn, :show, payment: payment)
+    with %{} = payment <- Payments.get_payment(id) || {:error, :not_found},
+         :ok <- Authz.authorize_lga(current_user(conn), payment.seller.lga_id) do
+      render(conn, :show, payment: payment)
     end
   end
 end
