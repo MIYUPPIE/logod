@@ -138,3 +138,23 @@ Matches SRS §7 milestones 1–7 (milestone 8, the field pilot, is out of scope 
 it requires real devices and real agents). Within backend, ship in dependency order: schema → auth
 → registration → payments/receipts/SMS → sync → dashboards → admin → audit/hardening pass →
 tests throughout, not bolted on at the end.
+
+## Known limitation: same-batch seller reference
+
+`PaymentCreateRequest.seller_id` (contracts/openapi.yaml) requires a canonical integer seller id.
+An agent who registers a seller and wants to collect a payment from them in the **same** offline
+session, before either record has ever reached the server, has no way to reference "the seller I
+just registered in this batch" — there's no local-`client_uuid`-to-payment-payload mechanism in
+the contract. `services/mobile` handles this conservatively: it gates payment collection to
+sellers that already have a canonical `seller_uid` (i.e. have synced at least once), with a clear
+"pending sync" message otherwise, rather than guessing at an unspecified contract behavior.
+
+This doesn't violate the MVP's "under 3 minutes" definition of done — the agent still onboards and
+collects in one continuous field interaction, sync happens automatically on reconnect (or a manual
+tap) within that same session in the normal case — but a seller registered and paid in a single
+*fully offline* session (no connectivity at all during the interaction) can't be paid until the
+next sync. A v1.1 fix: let `Sync.process_batch` resolve `seller_client_uuid` against either an
+already-created row (this call) or a seller record earlier in the *same* batch, and add that field
+to `SyncRecord`'s payment payload in the contract. Left out of this build because it's a contract
+change touching both services, not a same-service fix, and the conservative fallback the mobile
+app already ships is correct, not broken.
