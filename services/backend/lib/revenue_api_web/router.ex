@@ -12,7 +12,7 @@ defmodule RevenueApiWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug CORSPlug, origin: {RevenueApiWeb.CorsOrigins, :list, []}
+    plug CORSPlug, origin: &RevenueApiWeb.CorsOrigins.list/0
   end
 
   pipeline :authenticated do

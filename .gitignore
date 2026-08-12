@@ -10,6 +10,8 @@ services/backend/assets/node_modules/
 services/backend/config/*.secret.exs
 services/backend/.env
 services/backend/uploads/
+services/backend/priv/uploads/
+services/backend/priv/uploads_test/
 
 # --- Flutter / Dart (services/mobile) ---
 services/mobile/.dart_tool/

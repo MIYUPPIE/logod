@@ -3,8 +3,8 @@
     <h1 class="text-xl font-semibold mb-6">Revenue MVP — Admin / Supervisor Login</h1>
 
     <.form :let={_f} for={%{}} as={:login} action={~p"/login"} method="post" class="space-y-2">
-      <.input name="identifier" type="text" label="Email or phone" required />
-      <.input name="password" type="password" label="Password" required />
+      <.input name="identifier" type="text" value="" label="Email or phone" required />
+      <.input name="password" type="password" value="" label="Password" required />
 
       <p :if={@error} class="mt-1.5 flex gap-2 items-center text-sm text-error">{@error}</p>
 

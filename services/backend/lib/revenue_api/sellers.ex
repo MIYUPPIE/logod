@@ -71,6 +71,11 @@ defmodule RevenueApi.Sellers do
     with :ok <- authorize_lga(actor, lga_id),
          :ok <- validate_hierarchy(attrs) do
       Repo.transaction(fn ->
+        attrs =
+          attrs
+          |> Map.new(fn {k, v} -> {to_string(k), v} end)
+          |> Map.put("registered_by_user_id", actor.id)
+
         changeset = Seller.changeset(%Seller{}, attrs)
 
         if changeset.valid? do

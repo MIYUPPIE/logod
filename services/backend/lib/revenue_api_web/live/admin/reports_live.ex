@@ -54,7 +54,7 @@ defmodule RevenueApiWeb.Admin.ReportsLive do
         </div>
         <button type="submit" class="btn btn-primary">Filter</button>
         <a
-          href={~p"/admin/reports/revenue.csv?from=#{@from}&to=#{@to}"}
+          href={~p"/admin/reports/revenue.csv?from=#{Date.to_iso8601(@from)}&to=#{Date.to_iso8601(@to)}"}
           class="btn btn-outline"
         >
           Download CSV

@@ -20,10 +20,10 @@ defmodule RevenueApi.Sync do
 
     case Sellers.register(payload, actor, ctx) do
       {:ok, seller} ->
-        result(client_uuid, seller.duplicate_suspected && "flagged" || "synced",
+        result(client_uuid, (if seller.duplicate_suspected, do: "flagged", else: "synced"),
           canonical_id: seller.id,
           seller_uid: seller.seller_uid,
-          reason: seller.duplicate_suspected && "duplicate_suspected"
+          reason: if(seller.duplicate_suspected, do: "duplicate_suspected")
         )
 
       {:error, %Ecto.Changeset{} = changeset} ->

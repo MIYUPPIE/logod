@@ -66,6 +66,7 @@ defmodule RevenueApiWeb.Admin.LevyTypesLive do
         <.input
           name="lga_id"
           type="select"
+          value={@selected_lga_id}
           label="LGA"
           prompt="Choose an LGA"
           options={Enum.flat_map(@states, fn s -> Enum.map(Geo.list_lgas(s.id), &{"#{s.name} / #{&1.name}", &1.id}) end)}
