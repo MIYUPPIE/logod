@@ -47,7 +47,7 @@ logins (password `ChangeMe123!` for all three):
 Admin/Supervisor dashboards: `http://localhost:4000/login` (session auth). Mobile API base URL:
 `http://localhost:4000/api/v1` (JWT auth).
 
-**Tests:** `cd services/backend && mix test` (63 tests) or `mix precommit` for the full gate
+**Tests:** `cd services/backend && mix test` (82 tests) or `mix precommit` for the full gate
 (strict compile, unused-deps check, format, test).
 
 ### Using docker-compose instead of a native Postgres/MinIO install
@@ -64,14 +64,72 @@ dev/test use `RevenueApi.Storage.Local` (disk-backed) so MinIO isn't required fo
 
 ## Running the mobile app
 
+The app's local database (`sqflite`) is a real platform plugin with no web or Linux-desktop
+implementation wired up — despite `flutter devices` happily listing "Linux (desktop)" and "Chrome
+(web)" as targets, the app will crash on startup on either. **An Android emulator (or a real
+Android device) is the only way to run it.** `flutter analyze` / `flutter test` (see
+[`services/mobile/README.md`](services/mobile/README.md)) don't need this — they run against a
+fake in-memory database — but actually launching the app does.
+
+### One-time environment setup
+
+Skip anything you've already got. Check what's present with `flutter doctor` and
+`flutter emulators` first.
+
+1. **Your user needs to be in the `kvm` group** (hardware-accelerated virtualization — without
+   it the emulator either fails outright or is unusably slow under software emulation):
+   ```bash
+   sudo usermod -aG kvm $USER
+   ```
+   Then **log out and back in** (or reboot) — group membership only takes effect in a fresh
+   session, a plain new terminal isn't enough. Verify with `groups` afterwards; `kvm` should be
+   listed. If you can't log out right now, `sg kvm -c '<command>'` runs a single command with the
+   group applied without a fresh session (that's how this was bootstrapped mid-session below).
+
+2. **An x86_64 system image + AVD.** If `flutter emulators` shows nothing, or only an AVD you
+   didn't create, build one (an existing `arm64` or `arm`-targeted AVD will not boot on an x86_64
+   host — the QEMU2 engine refuses ARM guests on a non-ARM host outright):
+   ```bash
+   sdkmanager "system-images;android-35;google_apis;x86_64"   # ~1GB download, one-time
+   avdmanager create avd -n Pixel_6_API_35 \
+     -k "system-images;android-35;google_apis;x86_64" -d pixel_6
+   ```
+
+### Every run
+
 ```bash
+# 1. Backend must be up (separate terminal / background):
+cd services/backend && mix phx.server
+
+# 2. Start the emulator. Headless (-no-window) is more reliable in a remote/SSH'd
+#    or otherwise display-flaky session; drop -no-window for a real window if you're
+#    at the machine's own desktop and want to see/tap it directly.
+sg kvm -c '$ANDROID_HOME/emulator/emulator -avd Pixel_6_API_35 -no-window -no-audio -no-boot-anim' &
+
+# 3. Wait for it to fully boot (cold boot with acceleration: ~90s; watch for this to print 1):
+adb wait-for-device
+adb shell getprop sys.boot_completed
+
+# 4. Run the app. 10.0.2.2 is the Android emulator's fixed alias for the host
+#    machine's localhost — plain "localhost" from inside the emulator means the
+#    emulator itself, not your backend.
 cd services/mobile
-flutter pub get
-flutter run --dart-define=API_BASE_URL=http://localhost:4000/api/v1
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:4000/api/v1
 ```
 
-See [`services/mobile/README.md`](services/mobile/README.md) for architecture notes and test
-instructions.
+A real device on the same network instead of the emulator: use the machine's real LAN IP (not
+`10.0.2.2`, not `localhost`) in `API_BASE_URL`, and make sure the backend binds beyond loopback
+(`config :revenue_api, RevenueApiWeb.Endpoint, http: [ip: {0, 0, 0, 0}]` in
+`services/backend/config/dev.exs` — it currently binds to `127.0.0.1` only, loopback-only, on
+purpose for local dev).
+
+Headless has no visible window; to actually look at the running app, either drop `-no-window`
+(needs a stable local display) or grab a screenshot without one: `adb exec-out screencap -p >
+screen.png`. `flutter run`'s terminal still gives you hot reload (`r`) and full log output either
+way.
+
+See [`services/mobile/README.md`](services/mobile/README.md) for architecture notes, the widget-
+test gotchas discovered building this, and the test suite (`flutter analyze` clean, 40 tests).
 
 ## What's deliberately deferred
 
@@ -99,10 +157,11 @@ Per [`MVP_DEV_SPEC.md`](MVP_DEV_SPEC.md) §2 and the resolved open decisions in
 
 ## Restart / setup steps needing your action
 
-Nothing in this build required `sudo`, but two things are genuinely deferred to whoever deploys
-this for real, since they need secrets or system packages this environment doesn't have:
-
 ```bash
+# Required to run the mobile app on an emulator (see "Running the mobile app" above) -
+# grants hardware-accelerated virtualization access. Needs a fresh login/reboot after.
+sudo usermod -aG kvm $USER
+
 # Optional, only if you want PostGIS enabled now instead of when v2 needs it:
 sudo apt install postgresql-16-postgis-3
 

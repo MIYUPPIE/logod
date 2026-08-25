@@ -9,14 +9,23 @@ service's point of view — never edited here).
 
 ## Running
 
+This app needs a real Android (or iOS) target — its `sqflite` database has no web or Linux-
+desktop implementation, so it will crash on startup on either of those even though
+`flutter devices` lists them. See the root [`README.md`](../../README.md#running-the-mobile-app)
+for full environment setup (emulator/AVD creation, the one-time `kvm` group fix, running the
+backend alongside it).
+
 ```
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://localhost:4000/api/v1
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:4000/api/v1
 ```
 
-`API_BASE_URL` defaults to `http://localhost:4000/api/v1` (the sibling backend's dev address),
-so `flutter run` with no flags works out of the box against a local backend. Override it for a
-staging/prod backend, e.g. `--dart-define=API_BASE_URL=https://revenue.example.gov.ng/api/v1`.
+`10.0.2.2` is the Android emulator's fixed alias for the host machine's `localhost` — the app's
+`API_BASE_URL` default (`http://localhost:4000/api/v1`) only works on a *real device* reachable at
+that address (e.g. `flutter run` on a physical phone tethered via `adb reverse tcp:4000
+tcp:4000`), never from inside the emulator, where plain `localhost` means the emulator itself.
+Override for a staging/prod backend, e.g.
+`--dart-define=API_BASE_URL=https://revenue.example.gov.ng/api/v1`.
 
 Android needs `INTERNET`, `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`, and `CAMERA`
 permissions, already declared in `android/app/src/main/AndroidManifest.xml`. iOS needs the
