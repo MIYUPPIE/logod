@@ -91,7 +91,13 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
         const SizedBox(height: 16),
         if (draft.stateId != null)
           _GeoDropdown(
-            fieldKey: const Key('lga_field'),
+            // Keyed on the parent id so a state change forces a fresh
+            // DropdownButtonFormField instance instead of reusing the old
+            // one - DropdownButtonFormField only applies `initialValue` on
+            // first mount, so without this the widget kept showing/
+            // submitting a stale selection from the previous state after
+            // a state change, until the whole app was restarted.
+            fieldKey: Key('lga_field_${draft.stateId}'),
             label: 'LGA *',
             provider: lgasProvider(draft.stateId!),
             selectedId: draft.lgaId,
@@ -110,7 +116,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
         const SizedBox(height: 16),
         if (draft.lgaId != null)
           _GeoDropdown(
-            fieldKey: const Key('ward_field'),
+            fieldKey: Key('ward_field_${draft.lgaId}'),
             label: 'Ward *',
             provider: wardsProvider(draft.lgaId!),
             selectedId: draft.wardId,
@@ -127,7 +133,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
         const SizedBox(height: 16),
         if (draft.wardId != null)
           _GeoDropdown(
-            fieldKey: const Key('market_field'),
+            fieldKey: Key('market_field_${draft.wardId}'),
             label: 'Market *',
             provider: marketsProvider(draft.wardId!),
             selectedId: draft.marketId,
