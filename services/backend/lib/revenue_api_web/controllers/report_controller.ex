@@ -16,10 +16,13 @@ defmodule RevenueApiWeb.ReportController do
           |> send_resp(200, Reports.to_csv(payments))
 
         _ ->
-          json(conn, RevenueApiWeb.PaymentJSON.index(%{payments: payments}))
+          json(conn, RevenueApiWeb.ReportJSON.index(%{payments: payments}))
       end
     else
-      :error -> conn |> put_status(:bad_request) |> json(%{errors: %{detail: "invalid_date"}})
+      # Date.from_iso8601/1 returns {:error, reason} (e.g. :invalid_format),
+      # never the bare :error atom - this clause never actually matched.
+      {:error, _reason} ->
+        conn |> put_status(:bad_request) |> json(%{errors: %{detail: "invalid_date"}})
     end
   end
 

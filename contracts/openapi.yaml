@@ -317,7 +317,7 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/Payment" }
+                items: { $ref: "#/components/schemas/RevenueReportRow" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
   /admin/users:
@@ -625,6 +625,20 @@ components:
         name: { type: string }
         amount: { type: number, format: decimal }
         frequency: { $ref: "#/components/schemas/LevyFrequency" }
+
+    RevenueReportRow:
+      type: object
+      description: Enriched for reading, not the raw Payment row - see ReportJSON.
+      properties:
+        id: { type: integer }
+        receipt_no: { type: string }
+        seller_uid: { type: string }
+        business_name: { type: string }
+        levy_type_name: { type: string }
+        amount: { type: number, format: decimal }
+        method: { $ref: "#/components/schemas/PaymentMethod" }
+        agent_name: { type: string }
+        paid_at: { type: string, format: date-time }
 
     LevyTypeCreateRequest:
       type: object

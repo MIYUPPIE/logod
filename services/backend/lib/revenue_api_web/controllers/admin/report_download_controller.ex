@@ -16,7 +16,8 @@ defmodule RevenueApiWeb.Admin.ReportDownloadController do
       |> put_resp_header("content-disposition", ~s(attachment; filename="revenue.csv"))
       |> send_resp(200, Reports.to_csv(payments))
     else
-      :error -> conn |> put_status(:bad_request) |> text("invalid date")
+      # Date.from_iso8601/1 returns {:error, reason}, not the bare :error atom.
+      {:error, _reason} -> conn |> put_status(:bad_request) |> text("invalid date")
     end
   end
 end
