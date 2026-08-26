@@ -350,6 +350,24 @@ paths:
         "400": { $ref: "#/components/responses/ValidationError" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /admin/levy-types:
+    post:
+      tags: [admin]
+      summary: Create a levy type (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LevyTypeCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LevyType" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /admin/levy-types/{id}:
     patch:
       tags: [admin]
@@ -603,6 +621,15 @@ components:
       type: object
       properties:
         id: { type: integer }
+        lga_id: { type: integer }
+        name: { type: string }
+        amount: { type: number, format: decimal }
+        frequency: { $ref: "#/components/schemas/LevyFrequency" }
+
+    LevyTypeCreateRequest:
+      type: object
+      required: [lga_id, name, amount, frequency]
+      properties:
         lga_id: { type: integer }
         name: { type: string }
         amount: { type: number, format: decimal }

@@ -78,6 +78,7 @@ defmodule RevenueApiWeb.Router do
 
     get "/users", Admin.UserController, :index
     post "/users", Admin.UserController, :create
+    post "/levy-types", Admin.LevyTypeController, :create
     patch "/levy-types/:id", Admin.LevyTypeController, :update
   end
 
