@@ -7,6 +7,10 @@ import '../core/storage/token_storage.dart';
 import '../models/user.dart';
 import '../repositories/auth_repository.dart';
 
+const _nonAgentLoginMessage =
+    'This app is for Revenue Agents only. Admins and Supervisors should use '
+    'the web dashboard instead.';
+
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
 
 /// dioProvider reads authControllerProvider.notifier lazily, inside the
@@ -57,6 +61,14 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> _bootstrap() async {
     final user = await _repo.currentUser();
+    if (user != null && user.role != UserRole.agent) {
+      // A non-agent session should never have been persisted in the first
+      // place (see login() below), but guard against a stale one restored
+      // from before this check existed.
+      await _repo.logout();
+      state = const AuthState(isLoading: false, user: null, errorMessage: _nonAgentLoginMessage);
+      return;
+    }
     state = AuthState(isLoading: false, user: user);
   }
 
@@ -64,6 +76,16 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final user = await _repo.login(identifier: identifier, password: password);
+      if (user.role != UserRole.agent) {
+        // The backend has no role restriction on /auth/login (any active
+        // account can obtain a token - role is enforced per-endpoint, not
+        // at login), so this app is the one place that needs to say "this
+        // tool is for agents." Log back out immediately rather than
+        // leaving a non-agent session sitting in secure storage.
+        await _repo.logout();
+        state = const AuthState(isLoading: false, user: null, errorMessage: _nonAgentLoginMessage);
+        return;
+      }
       state = AuthState(isLoading: false, user: user);
     } on DioException catch (e) {
       state = AuthState(

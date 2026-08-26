@@ -145,15 +145,21 @@ void main() {
       await tester.tap(find.text('Lagos').last);
       await tester.pumpAndSettle();
 
-      await tapKey(tester, 'lga_field');
+      // lga_field/ward_field/market_field are keyed on their parent id
+      // (lga_field_<stateId>, etc.) so Flutter remounts each cascading
+      // dropdown fresh instead of reusing stale DropdownButtonFormField
+      // state after the parent selection changes - see business_step.dart.
+      // The seeded test fixture (test/helpers/geo_seed.dart) gives Lagos/
+      // Ikeja/Ward 1/Central Market id 1 at every level.
+      await tapKey(tester, 'lga_field_1');
       await tester.tap(find.text('Ikeja').last);
       await tester.pumpAndSettle();
 
-      await tapKey(tester, 'ward_field');
+      await tapKey(tester, 'ward_field_1');
       await tester.tap(find.text('Ward 1').last);
       await tester.pumpAndSettle();
 
-      await tapKey(tester, 'market_field');
+      await tapKey(tester, 'market_field_1');
       await tester.tap(find.text('Central Market').last);
       await tester.pumpAndSettle();
 
