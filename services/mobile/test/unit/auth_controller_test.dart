@@ -9,11 +9,12 @@ import 'package:revenue_agent_app/core/storage/token_storage.dart';
 import 'package:revenue_agent_app/providers/auth_providers.dart';
 import 'package:revenue_agent_app/repositories/auth_repository.dart';
 
-/// This app is agent-only (registration/payment field workflow); admins and
-/// supervisors have the web dashboard instead. The backend's /auth/login has
-/// no role restriction of its own - any active account can get a token,
-/// since role is enforced per-endpoint, not at login - so this app is the
-/// one place that has to say "wrong tool" instead of silently working.
+/// This app is for Revenue Agents (field workflow) and Admins (field
+/// workflow, unrestricted across LGAs, plus management screens) only;
+/// Supervisors have the web dashboard instead. The backend's /auth/login
+/// has no role restriction of its own - any active account can get a
+/// token, since role is enforced per-endpoint, not at login - so this app
+/// is the one place that has to say "wrong tool" for a disallowed role.
 class MockDio extends Mock implements Dio {}
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -87,24 +88,8 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('an agent login succeeds and is retained', () async {
-    when(() => dio.post<Map<String, dynamic>>('/auth/login', data: any(named: 'data')))
-        .thenAnswer((_) async => Response(
-              requestOptions: RequestOptions(path: '/auth/login'),
-              statusCode: 200,
-              data: _loginResponseJson('agent'),
-            ));
-
-    final controller = container.read(authControllerProvider.notifier);
-    await controller.login(identifier: 'user@example.com', password: 'secret');
-
-    final state = container.read(authControllerProvider);
-    expect(state.isLoggedIn, isTrue);
-    expect(state.errorMessage, isNull);
-  });
-
-  for (final role in ['admin', 'supervisor']) {
-    test('a $role login is rejected with a clear message and clears local storage', () async {
+  for (final role in ['agent', 'admin']) {
+    test('a $role login succeeds and is retained', () async {
       when(() => dio.post<Map<String, dynamic>>('/auth/login', data: any(named: 'data')))
           .thenAnswer((_) async => Response(
                 requestOptions: RequestOptions(path: '/auth/login'),
@@ -116,24 +101,40 @@ void main() {
       await controller.login(identifier: 'user@example.com', password: 'secret');
 
       final state = container.read(authControllerProvider);
-      expect(state.isLoggedIn, isFalse);
-      expect(state.errorMessage, contains('Revenue Agents only'));
-
-      // The token was written by AuthRepository.login before the role was
-      // known, then must have been torn down again by the rejection path.
-      verify(() => secureStorage.delete(
-            key: 'access_token',
-            iOptions: any(named: 'iOptions'),
-            aOptions: any(named: 'aOptions'),
-            lOptions: any(named: 'lOptions'),
-            webOptions: any(named: 'webOptions'),
-            mOptions: any(named: 'mOptions'),
-            wOptions: any(named: 'wOptions'),
-          )).called(1);
+      expect(state.isLoggedIn, isTrue);
+      expect(state.errorMessage, isNull);
     });
   }
 
-  test('a stale non-agent session from before this check existed is logged out on bootstrap', () async {
+  test('a supervisor login is rejected with a clear message and clears local storage', () async {
+    when(() => dio.post<Map<String, dynamic>>('/auth/login', data: any(named: 'data')))
+        .thenAnswer((_) async => Response(
+              requestOptions: RequestOptions(path: '/auth/login'),
+              statusCode: 200,
+              data: _loginResponseJson('supervisor'),
+            ));
+
+    final controller = container.read(authControllerProvider.notifier);
+    await controller.login(identifier: 'user@example.com', password: 'secret');
+
+    final state = container.read(authControllerProvider);
+    expect(state.isLoggedIn, isFalse);
+    expect(state.errorMessage, contains('Agents and Admins only'));
+
+    // The token was written by AuthRepository.login before the role was
+    // known, then must have been torn down again by the rejection path.
+    verify(() => secureStorage.delete(
+          key: 'access_token',
+          iOptions: any(named: 'iOptions'),
+          aOptions: any(named: 'aOptions'),
+          lOptions: any(named: 'lOptions'),
+          webOptions: any(named: 'webOptions'),
+          mOptions: any(named: 'mOptions'),
+          wOptions: any(named: 'wOptions'),
+        )).called(1);
+  });
+
+  test('a stale disallowed-role session from before this check existed is logged out on bootstrap', () async {
     when(() => secureStorage.read(
           key: 'access_token',
           iOptions: any(named: 'iOptions'),
@@ -152,7 +153,7 @@ void main() {
           mOptions: any(named: 'mOptions'),
           wOptions: any(named: 'wOptions'),
         )).thenAnswer((_) async =>
-            '{"id":1,"name":"Old Admin","email":"a@example.com","phone":null,"role":"admin","lga_id":null,"device_id":null,"active":true}');
+            '{"id":1,"name":"Old Supervisor","email":"s@example.com","phone":null,"role":"supervisor","lga_id":5,"device_id":null,"active":true}');
 
     // AuthController._bootstrap runs from the constructor; read the
     // provider to trigger construction, then let the async bootstrap settle.
@@ -161,6 +162,6 @@ void main() {
 
     final state = container.read(authControllerProvider);
     expect(state.isLoggedIn, isFalse);
-    expect(state.errorMessage, contains('Revenue Agents only'));
+    expect(state.errorMessage, contains('Agents and Admins only'));
   });
 }

@@ -44,6 +44,11 @@ logins (password `ChangeMe123!` for all three):
 | `supervisor.ikeja@revenue.test` | Ikeja supervisor |
 | `agent.ikeja@revenue.test` | Ikeja agent |
 
+The mobile app accepts **agent and admin** logins (admin gets an expanded home screen: the same
+field workflow plus user/levy-type management and revenue reports, unrestricted across LGAs — see
+`services/mobile/lib/screens/admin/`). Supervisor is web-dashboard-only; logging into the mobile
+app with `supervisor.ikeja@revenue.test` is rejected with a clear message.
+
 Admin/Supervisor dashboards: `http://localhost:4000/login` (session auth). Mobile API base URL:
 `http://localhost:4000/api/v1` (JWT auth).
 
@@ -148,7 +153,7 @@ screen.png`. `flutter run`'s terminal still gives you hot reload (`r`) and full 
 way.
 
 See [`services/mobile/README.md`](services/mobile/README.md) for architecture notes, the widget-
-test gotchas discovered building this, and the test suite (`flutter analyze` clean, 40 tests).
+test gotchas discovered building this, and the test suite (`flutter analyze` clean, 51 tests).
 
 ## What's deliberately deferred
 
@@ -194,3 +199,7 @@ Production deploy needs these environment variables set (see
 `GUARDIAN_SECRET_KEY`, `RECEIPT_SIGNING_KEY`, `PHX_HOST`, `TERMII_API_KEY`, `TERMII_SENDER_ID`,
 `S3_BUCKET` (+ standard `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_ENDPOINT_URL_S3` for
 MinIO), `CORS_ORIGINS`.
+
+
+
+flutter run -d 060393713J002512 --dart-define=API_BASE_URL=http://localhost:4000/api/v1 > /tmp/flutter_run.log 2>&1

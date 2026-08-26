@@ -38,8 +38,8 @@ flutter analyze   # must be clean, no warnings
 flutter test      # unit + widget tests
 ```
 
-Both are clean as of this build: `flutter analyze` reports no issues; `flutter test` runs 40
-tests (36 unit across 6 files, 4 widget tests across 2 files) and all pass.
+Both are clean as of this build: `flutter analyze` reports no issues; `flutter test` runs 51
+tests (47 unit across 9 files, 4 widget tests across 2 files) and all pass.
 
 - `test/unit/` — repository layer (sqflite, via `sqflite_common_ffi` in-memory) and the sync
   service, using `mocktail` to fake `Dio`/`FlutterSecureStorage`. No platform channels touched.
@@ -89,14 +89,43 @@ lib/
     storage/        TokenStorage - flutter_secure_storage wrapper
     utils/          client_uuid + ISO timestamp generation
   models/           Hand-written (no codegen) request/response/local-row models
-  repositories/     One per concern: auth, geo, levy types, sellers, payments, + SyncService
-  providers/        Riverpod wiring - db/network/auth/connectivity/sync/geo providers
-  screens/          auth, home, registration (4-step wizard), payment, search/QR, flagged
+  repositories/     One per concern: auth, geo, levy types, sellers, payments, admin, + SyncService
+  providers/        Riverpod wiring - db/network/auth/connectivity/sync/geo/repository providers
+  screens/
+    auth/           Login
+    home/           Agent home (field workflow only)
+    admin/          Admin home (field workflow + user/levy-type management + reports)
+    registration/   4-step wizard, shared by agent and admin
+    payment/        Payment flow + on-device receipt, shared by agent and admin
+    search/         Seller search/QR, shared by agent and admin
+    flagged/        Flagged/duplicate-suspected records, shared by agent and admin
+    shared/         GeoDropdown, SyncStatusCard, ActionTile - cross-screen building blocks
 ```
 
 State management: **Riverpod** (`flutter_riverpod`), chosen over `provider` per the brief's
 "pick one" instruction — its provider-override mechanism is what makes the widget tests above
 possible without a DI framework.
+
+### Role-based home screen
+
+`AuthController` only accepts `agent` and `admin` logins (`supervisor` is web-dashboard-only,
+rejected with a clear message and logged back out — the backend's `/auth/login` has no role
+restriction of its own, since role is enforced per-endpoint, not at login, so this app is the one
+place that has to say so). `app.dart`'s `_AuthGate` then routes by role: `HomeScreen` for an
+agent, `AdminHomeScreen` for an admin. Admin gets everything an agent gets (the backend already
+treats `lga_id: nil` as an unrestricted state-level admin — see `RevenueApi.Authz` on the backend
+— so the same registration/payment/search screens work unchanged) plus a management section
+mirroring the web LiveView admin panel: live dashboard (`/dashboard/summary`), user provisioning
+(`/admin/users`), levy type create/edit (`/admin/levy-types`), and revenue reports
+(`/reports/revenue`).
+
+`GeoDropdown` (`lib/screens/shared/geo_dropdown.dart`) is reused for both the registration
+wizard's State→LGA→Ward→Market cascade and the admin levy-types screen's State→LGA picker. Each
+cascading level **must** be keyed on its parent's id (`Key('lga_field_$stateId')`, not a constant
+key) — found live, on a real device: `DropdownButtonFormField` only applies `initialValue` on
+first mount, so a constant key let Flutter reuse the same underlying element across a parent
+change, and the widget kept showing/submitting a stale selection from the previous parent until
+the whole app was force-restarted. The dropdown's own doc comment has the full explanation.
 
 ### Offline-first data flow
 

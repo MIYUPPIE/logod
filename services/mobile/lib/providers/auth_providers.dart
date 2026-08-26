@@ -8,8 +8,10 @@ import '../models/user.dart';
 import '../repositories/auth_repository.dart';
 
 const _nonAgentLoginMessage =
-    'This app is for Revenue Agents only. Admins and Supervisors should use '
+    'This app is for Revenue Agents and Admins only. Supervisors should use '
     'the web dashboard instead.';
+
+bool _allowedInMobileApp(UserRole role) => role == UserRole.agent || role == UserRole.admin;
 
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
 
@@ -61,7 +63,7 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> _bootstrap() async {
     final user = await _repo.currentUser();
-    if (user != null && user.role != UserRole.agent) {
+    if (user != null && !_allowedInMobileApp(user.role)) {
       // A non-agent session should never have been persisted in the first
       // place (see login() below), but guard against a stale one restored
       // from before this check existed.
@@ -76,12 +78,12 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final user = await _repo.login(identifier: identifier, password: password);
-      if (user.role != UserRole.agent) {
+      if (!_allowedInMobileApp(user.role)) {
         // The backend has no role restriction on /auth/login (any active
         // account can obtain a token - role is enforced per-endpoint, not
         // at login), so this app is the one place that needs to say "this
-        // tool is for agents." Log back out immediately rather than
-        // leaving a non-agent session sitting in secure storage.
+        // tool isn't for you." Log back out immediately rather than
+        // leaving a disallowed session sitting in secure storage.
         await _repo.logout();
         state = const AuthState(isLoading: false, user: null, errorMessage: _nonAgentLoginMessage);
         return;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'models/user.dart';
 import 'providers/auth_providers.dart';
+import 'screens/admin/admin_home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 
@@ -37,6 +39,10 @@ class _AuthGate extends ConsumerWidget {
 
     if (!authState.isLoggedIn) {
       return const LoginScreen();
+    }
+
+    if (authState.user!.role == UserRole.admin) {
+      return const AdminHomeScreen();
     }
 
     return const HomeScreen();

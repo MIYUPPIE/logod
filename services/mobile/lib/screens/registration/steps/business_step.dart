@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../models/geo_node.dart';
 import '../../../providers/geo_providers.dart';
+import '../../shared/geo_dropdown.dart';
 import '../registration_draft.dart';
 
 class BusinessStep extends ConsumerStatefulWidget {
@@ -69,7 +69,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
           },
         ),
         const SizedBox(height: 24),
-        _GeoDropdown(
+        GeoDropdown(
           fieldKey: const Key('state_field'),
           label: 'State *',
           provider: statesProvider,
@@ -90,13 +90,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
         ),
         const SizedBox(height: 16),
         if (draft.stateId != null)
-          _GeoDropdown(
-            // Keyed on the parent id so a state change forces a fresh
-            // DropdownButtonFormField instance instead of reusing the old
-            // one - DropdownButtonFormField only applies `initialValue` on
-            // first mount, so without this the widget kept showing/
-            // submitting a stale selection from the previous state after
-            // a state change, until the whole app was restarted.
+          GeoDropdown(
             fieldKey: Key('lga_field_${draft.stateId}'),
             label: 'LGA *',
             provider: lgasProvider(draft.stateId!),
@@ -115,7 +109,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
           ),
         const SizedBox(height: 16),
         if (draft.lgaId != null)
-          _GeoDropdown(
+          GeoDropdown(
             fieldKey: Key('ward_field_${draft.lgaId}'),
             label: 'Ward *',
             provider: wardsProvider(draft.lgaId!),
@@ -132,7 +126,7 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
           ),
         const SizedBox(height: 16),
         if (draft.wardId != null)
-          _GeoDropdown(
+          GeoDropdown(
             fieldKey: Key('market_field_${draft.wardId}'),
             label: 'Market *',
             provider: marketsProvider(draft.wardId!),
@@ -146,49 +140,6 @@ class _BusinessStepState extends ConsumerState<BusinessStep> {
             },
           ),
       ],
-    );
-  }
-}
-
-class _GeoDropdown extends ConsumerWidget {
-  final Key fieldKey;
-  final String label;
-  final FutureProvider<List<GeoNode>> provider;
-  final int? selectedId;
-  final ValueChanged<GeoNode> onSelected;
-
-  const _GeoDropdown({
-    required this.fieldKey,
-    required this.label,
-    required this.provider,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncNodes = ref.watch(provider);
-    return asyncNodes.when(
-      loading: () => InputDecorator(
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        child: const LinearProgressIndicator(),
-      ),
-      error: (err, st) => InputDecorator(
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        child: const Text('Unavailable offline - visit with connectivity once to cache this list'),
-      ),
-      data: (nodes) => DropdownButtonFormField<int>(
-        key: fieldKey,
-        initialValue: nodes.any((n) => n.id == selectedId) ? selectedId : null,
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        items: nodes
-            .map((n) => DropdownMenuItem(value: n.id, child: Text(n.name)))
-            .toList(),
-        onChanged: (id) {
-          if (id == null) return;
-          onSelected(nodes.firstWhere((n) => n.id == id));
-        },
-      ),
     );
   }
 }

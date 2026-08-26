@@ -34,4 +34,32 @@ class LevyTypeRepository {
     final rows = await db.query('levy_types', where: 'lga_id = ?', whereArgs: [lgaId], orderBy: 'name ASC');
     return rows.map(LevyType.fromDb).toList();
   }
+
+  /// Admin-only. Online (management screens aren't part of the
+  /// offline-first field workflow) - throws on failure rather than
+  /// falling back to a cache, unlike forLga above.
+  Future<LevyType> create({
+    required int lgaId,
+    required String name,
+    required double amount,
+    required LevyFrequency frequency,
+  }) async {
+    final response = await dio.post<Map<String, dynamic>>('/admin/levy-types', data: {
+      'lga_id': lgaId,
+      'name': name,
+      'amount': amount,
+      'frequency': frequency.toJson(),
+    });
+    final created = LevyType.fromJson(response.data!);
+    await db.insert('levy_types', created.toDb(), conflictAlgorithm: ConflictAlgorithm.replace);
+    return created;
+  }
+
+  Future<LevyType> updateAmount(int id, double amount) async {
+    final response =
+        await dio.patch<Map<String, dynamic>>('/admin/levy-types/$id', data: {'amount': amount});
+    final updated = LevyType.fromJson(response.data!);
+    await db.insert('levy_types', updated.toDb(), conflictAlgorithm: ConflictAlgorithm.replace);
+    return updated;
+  }
 }
