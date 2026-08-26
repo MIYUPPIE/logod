@@ -71,6 +71,13 @@ Android device) is the only way to run it.** `flutter analyze` / `flutter test` 
 [`services/mobile/README.md`](services/mobile/README.md)) don't need this — they run against a
 fake in-memory database — but actually launching the app does.
 
+**Use absolute SDK paths, not bare command names.** Only `adb` is reliably on `PATH` out of the
+box (and even that may be a distro package at `/usr/bin/adb`, not the SDK's own copy — both work
+fine against the emulator, but this repo's commands below don't assume either is set up). None of
+`sdkmanager`, `avdmanager`, or `emulator` are on `PATH` by default; run `echo $ANDROID_HOME` and
+`which sdkmanager` to check your own setup before assuming the paths below need adjusting — if
+they're already on your `PATH`, drop the `~/Android/Sdk/...` prefix.
+
 ### One-time environment setup
 
 Skip anything you've already got. Check what's present with `flutter doctor` and
@@ -90,25 +97,33 @@ Skip anything you've already got. Check what's present with `flutter doctor` and
    didn't create, build one (an existing `arm64` or `arm`-targeted AVD will not boot on an x86_64
    host — the QEMU2 engine refuses ARM guests on a non-ARM host outright):
    ```bash
-   sdkmanager "system-images;android-35;google_apis;x86_64"   # ~1GB download, one-time
-   avdmanager create avd -n Pixel_6_API_35 \
+   ~/Android/Sdk/cmdline-tools/latest/bin/sdkmanager "system-images;android-35;google_apis;x86_64"   # ~1GB, one-time
+   ~/Android/Sdk/cmdline-tools/latest/bin/avdmanager create avd -n Pixel_6_API_35 \
      -k "system-images;android-35;google_apis;x86_64" -d pixel_6
    ```
 
 ### Every run
 
 ```bash
-# 1. Backend must be up (separate terminal / background):
-cd services/backend && mix phx.server
+# 1. Backend must be up. Check first — a second `mix phx.server` on an already-running
+#    backend fails with "port 4000 already in use", which is harmless (one instance is
+#    already serving) but easy to mistake for a real error:
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:4000/login   # 200 = already up
+cd services/backend && mix phx.server                                 # only if the above wasn't 200
 
 # 2. Start the emulator. Headless (-no-window) is more reliable in a remote/SSH'd
 #    or otherwise display-flaky session; drop -no-window for a real window if you're
-#    at the machine's own desktop and want to see/tap it directly.
-sg kvm -c '$ANDROID_HOME/emulator/emulator -avd Pixel_6_API_35 -no-window -no-audio -no-boot-anim' &
+#    at the machine's own desktop and want to see/tap it directly. -no-snapshot forces
+#    a clean cold boot every time — a saved snapshot from a killed/crashed prior run can
+#    leave the next boot hanging or the guest's package manager silently dead (see below).
+sg kvm -c '~/Android/Sdk/emulator/emulator -avd Pixel_6_API_35 -no-window -no-audio -no-boot-anim -no-snapshot' &
 
-# 3. Wait for it to fully boot (cold boot with acceleration: ~90s; watch for this to print 1):
+# 3. Wait for it to fully boot, THEN verify it's actually usable, not just "booted" -
+#    sys.boot_completed can read 1 while the package manager is still dead (seen after a
+#    long-running instance degraded mid-session; a fresh cold boot doesn't have this problem):
 adb wait-for-device
-adb shell getprop sys.boot_completed
+adb shell getprop sys.boot_completed          # wait until this prints 1
+adb shell pm list packages -3                 # must NOT print "cmd: Can't find service"
 
 # 4. Run the app. 10.0.2.2 is the Android emulator's fixed alias for the host
 #    machine's localhost — plain "localhost" from inside the emulator means the
@@ -116,6 +131,10 @@ adb shell getprop sys.boot_completed
 cd services/mobile
 flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:4000/api/v1
 ```
+
+If step 3's `pm list packages` ever errors, or `flutter run`'s install step fails with `cmd:
+Can't find service: package` / `activity`, the emulator's guest OS has wedged — don't debug it,
+just kill and cold-boot it again: `pkill -9 -f qemu-system-x86_64`, then repeat step 2.
 
 A real device on the same network instead of the emulator: use the machine's real LAN IP (not
 `10.0.2.2`, not `localhost`) in `API_BASE_URL`, and make sure the backend binds beyond loopback
